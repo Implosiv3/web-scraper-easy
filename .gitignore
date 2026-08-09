@@ -1,0 +1,11 @@
+build/*
+dist/*
+web_scraper_easy.egg-info/*
+__pycache__
+*.bat
+settings.json
+settings.json
+.env*
+!.env.example
+test_files/*
+!test_files/test.txt

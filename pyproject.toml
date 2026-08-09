@@ -1,0 +1,37 @@
+[project]
+name = "web-scraper-easy"
+version = "0.0.1"
+description = "Web scraper, but made easy"
+authors = [
+    {name = "danialcala94", email = "danielalcalavalera@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.8,<3.14"
+
+[project.urls]
+Homepage = "https://github.com/Implosiv3/bufferpy"
+Issues = "https://github.com/Implosiv3/bufferpy/issues"
+
+[tool.poetry.dependencies]
+# Mandatory
+pystandards = { version = ">=0.0.17,<1.0.0", optional = false }
+selenium = { version = ">=4.27.1,<9999.0.0", optional = false }
+env_easy = { version = ">=0.0.3,<1.0.0", optional = false }
+# Optional
+
+[tool.poetry]
+packages = [{include = "web_scraper_easy", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+pytest = { version = ">=8.3.5,<9999.0.0", optional = false }
+pytest-easy = { version = ">=0.0.5,<9999.0.0", optional = false }
+
+[tool.pytest.ini_options]
+markers = [
+    "mandatory: mandatory tests for release",
+    "additional: exhaustive and demanding tests"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
