@@ -150,12 +150,15 @@ class ChromeScraper:
     @property
     def cookies(
         self
-    ) -> list[dict]:
+    ) -> dict:
         """
-        Get a list with the cookies of this instance's
-        driver, as a list of dict.
+        Get the cookies of the navigator as a dict
+        including the `name` and the `value`.
         """
-        return self.driver.get_cookies()
+        return {
+            cookie['name']: cookie['value']
+            for cookie in self.driver.get_cookies()
+        }
     
 
     @property
