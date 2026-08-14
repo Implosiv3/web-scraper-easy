@@ -1,7 +1,7 @@
 from web_scraper_easy.chrome.dataclasses.options_argument import HeadlessChromeOptionsArgument, LoadExtensionChromeOptionsArgument, _ChromeOptionsArgument, WindowSizeChromeOptionsArgument, IgnoreCertificateErrorsChromeOptionsArgument, IgnoreCertificateErrorsSpkiListChromeOptionsArgument, IgnoreSslErrorsChromeOptionsArgument, LoadChromeUserProfileChromeOptionArgument
 from web_scraper_easy.chrome.dataclasses.experimental_options import ExcludeSwitchesChromeExperimentalOption, EnableDownloadsChromeExperimentalOption, EnableMicrophoneChromeExperimentalOption, EnableClipboardChromeExperimentalOption, _ChromeExperimentalOption
 from pystandards.regex.general import GeneralRegularExpression
-from env_easy import Environment
+from env_easy import getenv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
@@ -15,9 +15,22 @@ from typing import Union
 import time
 
 
-CHROME_EXTENSIONS_ABSPATH = Environment.load_variable('CHROME_EXTENSIONS_ABSPATH')
-AD_BLOCK_ABSOLUTEPATH = Environment.load_variable('AD_BLOCK_ABSOLUTEPATH')
-CHROME_USER_DATA_ABSPATH = Environment.load_variable('CHROME_USER_DATA_ABSPATH')
+"""
+TODO: Is all this needed? Could we do
+something to make it work without (?)
+"""
+CHROME_EXTENSIONS_ABSPATH = getenv('CHROME_EXTENSIONS_ABSPATH')
+AD_BLOCK_ABSOLUTEPATH = getenv('AD_BLOCK_ABSOLUTEPATH')
+CHROME_USER_DATA_ABSPATH = getenv('CHROME_USER_DATA_ABSPATH')
+
+if not CHROME_EXTENSIONS_ABSPATH:
+    raise Exception('The "CHROME_EXTENSIONS_ABSPATH" environment variable is not defined.')
+
+if not AD_BLOCK_ABSOLUTEPATH:
+    raise Exception('The "AD_BLOCK_ABSOLUTEPATH" environment variable is not defined.')
+
+if not CHROME_USER_DATA_ABSPATH:
+    raise Exception('The "CHROME_USER_DATA_ABSPATH" environment variable is not defined.')
 
 class ChromeScraper:
     """
