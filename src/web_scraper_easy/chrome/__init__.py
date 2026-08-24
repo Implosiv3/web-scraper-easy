@@ -1,5 +1,6 @@
 from web_scraper_easy.chrome.dataclasses.options_argument import HeadlessChromeOptionsArgument, LoadExtensionChromeOptionsArgument, _ChromeOptionsArgument, WindowSizeChromeOptionsArgument, IgnoreCertificateErrorsChromeOptionsArgument, IgnoreCertificateErrorsSpkiListChromeOptionsArgument, IgnoreSslErrorsChromeOptionsArgument, LoadChromeUserProfileChromeOptionArgument
 from web_scraper_easy.chrome.dataclasses.experimental_options import ExcludeSwitchesChromeExperimentalOption, EnableDownloadsChromeExperimentalOption, EnableMicrophoneChromeExperimentalOption, EnableClipboardChromeExperimentalOption, _ChromeExperimentalOption
+from web_scraper_easy.chrome.consts import TIMEOUT, TIME_INTERVAL
 from pystandards.regex.general import GeneralRegularExpression
 from env_easy import getenv
 from selenium import webdriver
@@ -10,6 +11,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.common.exceptions import TimeoutException
 from typing import Union
 
 import time
@@ -31,6 +33,7 @@ if not AD_BLOCK_ABSOLUTEPATH:
 
 if not CHROME_USER_DATA_ABSPATH:
     raise Exception('The "CHROME_USER_DATA_ABSPATH" environment variable is not defined.')
+
 
 class ChromeScraper:
     """
@@ -654,7 +657,7 @@ class ChromeScraper:
     def find_element_by_id_waiting(
         self,
         id: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
@@ -725,7 +728,7 @@ class ChromeScraper:
         self,
         element_type: str,
         text: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
@@ -816,7 +819,7 @@ class ChromeScraper:
         self,
         element_type: str,
         class_str: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
@@ -905,7 +908,7 @@ class ChromeScraper:
         element_type: str,
         custom_tag: str,
         custom_tag_value: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
@@ -991,7 +994,7 @@ class ChromeScraper:
     def find_element_by_element_type_waiting(
         self,
         element_type: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
@@ -1044,7 +1047,7 @@ class ChromeScraper:
     def find_element_by_xpath_waiting(
         self,
         xpath: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided `xpath`
@@ -1108,6 +1111,32 @@ class ChromeScraper:
                 )
             )
         )
+
+
+    def wait_for_url_changes(
+        self,
+        number_of_changes: int = 1,
+        timeout: float = TIMEOUT
+    ):
+        initial_url = self.current_url
+        current_url = initial_url
+
+        changes = 0
+        start_time = time.time()
+
+        while (time.time() - start_time) < timeout:
+            new_url = self.current_url
+
+            if new_url != current_url:
+                changes += 1
+                current_url = new_url
+
+                if changes >= number_of_changes:
+                    return current_url
+
+            time.sleep(TIME_INTERVAL)
+
+        raise TimeoutException(f'We expected {str(number_of_changes)} changes in {str(timeout)} seconds but there were {str(changes)} changes in that period of time')
 
 
     # TODO: When an element is hidden and you cannot interact you
@@ -1528,7 +1557,7 @@ class ChromeScraper:
         self,
         by: By,
         by_value: str,
-        timeout: float = 30.0
+        timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
         *For internal use only*
@@ -1551,7 +1580,7 @@ class ChromeScraper:
     def _wait_until(
         self,
         condition,
-        timeout: float = 30.0,
+        timeout: float = TIMEOUT,
     ) -> bool:
         """
         *For internal use only*
@@ -1569,7 +1598,6 @@ class ChromeScraper:
         )
         ```
         """
-        TIME_INTERVAL = 0.1
         remaining_time = timeout
 
         while (
@@ -1638,68 +1666,6 @@ class ChromeScraper:
     # TODO: Maybe automate some 'execute_javascript' to change
     # 'innerHTML' and that stuff (?)
 
-
-
-# TODO: Remove all this below when all refactored.
-# By now I'm commenting them
-# def download_fake_call_image(name, output_filename):
-#     # TODO: Move this to the faker
-#     URL = 'https://prankshit.com/fake-iphone-call.php'
-
-#     try:
-#         driver = start_chrome()
-#         go_to_and_wait_loaded(driver, URL)
-
-#         inputs = driver.find_elements(By.TAG_NAME, 'input')
-#         name_textarea = driver.find_element(By.TAG_NAME, 'textarea')
-
-#         #operator_input = inputs[4]
-#         #hour_input = inputs[5]
-
-#         name_textarea.clear()
-#         name_textarea.send_keys(name)
-
-#         image = driver.find_element(By.XPATH, '//div[contains(@class, "modal-content tiktok-body")]')
-#         image.screenshot(output_filename)
-#     finally:
-#         driver.close()
-
-# # Other fake generators (https://fakeinfo.net/fake-twitter-chat-generator) ad (https://prankshit.com/fake-whatsapp-chat-generator.php)
-# def download_discord_message_image(text, output_filename):
-#     URL = 'https://message.style/app/editor'
-
-#     try:
-#         driver = start_chrome()
-#         go_to_and_wait_loaded(driver, URL)
-        
-#         time.sleep(3)
-
-#         clear_embed_button = driver.find_element(By.XPATH, "//button[contains(text(), 'Clear Embeds')]")
-#         clear_embed_button.click()
-
-#         time.sleep(3)
-
-#         input_elements = driver.find_elements(By.TAG_NAME, 'input')
-#         username_input = input_elements[3]
-#         avatar_url_input = input_elements[4]
-
-#         username_input.clear()
-#         username_input.send_keys('botsito')
-
-#         avatar_url_input.clear()
-#         avatar_url_input.send_keys('https://cdn.pixabay.com/photo/2016/11/18/23/38/child-1837375_640.png')
-
-#         textarea_input = driver.find_element(By.TAG_NAME, 'textarea')
-#         textarea_input.clear()
-#         textarea_input.send_keys(text)
-
-#         time.sleep(3)
-
-#         # get element div class='discord-message'
-#         discord_message = driver.find_element(By.XPATH, "//div[contains(@class, 'discord-message')]")
-#         discord_message.screenshot(output_filename)
-#     finally:
-#         driver.close()
 
 
 
