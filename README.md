@@ -2,6 +2,8 @@
 
 The easiest way to scrape the Internet.
 
+Remember to set the variables provided in the `.env.example` to make it work.
+
 
 # Functionality
 Scrape the Internet to get the information or perform the actions you need. By now we only have a `ChromeScraper` class to scrape using Google Chrome.

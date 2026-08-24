@@ -401,46 +401,6 @@ class ChromeScraper:
         self._close()
 
 
-    def _close(
-        self
-    ):
-        """
-        Force the driver to be closed and the 
-        'self.driver' attribute to be None.
-
-        For internal use only.
-        """
-        try:
-            self.driver.close()
-        finally:
-            self.driver = None
-
-
-    def _validate_url(
-        self,
-        url: str
-    ):
-        """
-        *For internal use only*
-
-        Validate the `url` provided, raising an exception
-        if it is not valid.
-        """
-        
-        """
-        When using 'www.google.es' instead of
-        'https://www.google.es' it raises an Exception
-        showing this in the console:
-        [9192:8160:0309/174912.456:ERROR:new_tab_page_handler.cc(1306)] NewTabPage loaded into a non-browser-tab context
-        and setting self.driver = None
-
-        Thats why we are validating with this specific
-        url regexp.
-        """
-        if not GeneralRegularExpression.URL.is_valid_regex(url):
-            raise Exception('The "url" provided is not a valid url.')
-
-
     def reload(
         self
     ) -> 'ChromeScraper':
@@ -521,9 +481,10 @@ class ChromeScraper:
         seconds: float
     ) -> 'ChromeScraper':
         """
-        Waits for the provided 'time' seconds. There is
-        no limit in the waiting time, so please use it
-        carefully.
+        Wait the `seconds` amount of seconds provided.
+
+        There is no limit in the waiting time so
+        please, use it carefully.
         """
         time.sleep(seconds)
 
@@ -693,15 +654,15 @@ class ChromeScraper:
     def find_element_by_id_waiting(
         self,
         id: str,
-        time: int = 30
+        timeout: float = 30.0
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
-        'element_type' with also provided 'id' is visible and 
-        returns it if it becomes visible in the 'time' seconds 
+        `element_type` with also provided `id` is visible and 
+        returns it if it becomes visible in the `time` seconds 
         of waiting. It returns None if not.
         """
-        return self._find_element_by_waiting(By.ID, id, time)
+        return self._find_element_by_waiting(By.ID, id, timeout)
 
 
     def find_elements_by_id(
@@ -764,19 +725,19 @@ class ChromeScraper:
         self,
         element_type: str,
         text: str,
-        time: int = 30
+        timeout: float = 30.0
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
-        'element_type' and 'text' is visible and returns it if 
-        it becomes visible in the 'time' seconds of waiting. It 
+        `element_type` and 'text' is visible and returns it if 
+        it becomes visible in the `timeout` seconds of waiting. It 
         returns None if not.
         """
         return self._find_element_by_waiting(
             By.XPATH,
             f"//{element_type}[contains(text(), '{text}')]",
             #"//" + element_type + "[contains(text(), '" + text + "')]",
-            time
+            timeout
         )
     
 
@@ -855,19 +816,19 @@ class ChromeScraper:
         self,
         element_type: str,
         class_str: str,
-        time: int = 30
+        timeout: float = 30.0
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
-        'element_type' and class is visible and returns it if it
-        becomes visible in the 'time' seconds of waiting. It 
+        `element_type` and class is visible and returns it if it
+        becomes visible in the `timeout` seconds of waiting. It 
         returns None if not.
         """
         return self._find_element_by_waiting(
             By.XPATH,
             f"//{element_type}[contains(@class, '{class_str}')]",
             #"//" + element_type + "[contains(@class, '" + class_str + "')]",
-            time
+            timeout
         )
 
 
@@ -944,12 +905,12 @@ class ChromeScraper:
         element_type: str,
         custom_tag: str,
         custom_tag_value: str,
-        time: int = 30
+        timeout: float = 30.0
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
-        'element_type' and custom tag is visible and returns it 
-        if it becomes visible in the 'time' seconds of waiting.
+        `element_type` and custom tag is visible and returns it 
+        if it becomes visible in the `timeout` seconds of waiting.
         It returns None if not.
         """
         tag = (
@@ -962,7 +923,7 @@ class ChromeScraper:
             By.XPATH,
             f'//{element_type}[{tag}]',
             #"//" + element_type + "[" + tag + "]"
-            time
+            timeout
         )
 
 
@@ -1030,18 +991,18 @@ class ChromeScraper:
     def find_element_by_element_type_waiting(
         self,
         element_type: str,
-        time: int = 30
+        timeout: float = 30.0
     ) -> Union[WebElement, None]:
         """
         Waits until the WebElement corresponding to the provided 
-        'element_type' tag is visible and returns it if it becomes
-        visible in the 'time' seconds of waiting. It returns None
-        if not.
+        `element_type` tag is visible and returns it if it becomes
+        visible in the `timeout` seconds of waiting. It returns
+        None if not.
         """
         return self._find_element_by_waiting(
             By.TAG_NAME,
             element_type,
-            time
+            timeout
         )
         
 
@@ -1083,17 +1044,17 @@ class ChromeScraper:
     def find_element_by_xpath_waiting(
         self,
         xpath: str,
-        time: int = 30
+        timeout: float = 30.0
     ) -> Union[WebElement, None]:
         """
-        Waits until the WebElement corresponding to the provided 'xpath'
-        is visible and returns it if it becomes visible in the 'time' 
+        Waits until the WebElement corresponding to the provided `xpath`
+        is visible and returns it if it becomes visible in the `timeout` 
         seconds of waiting. It returns None if not.
         """
         return self._find_element_by_waiting(
             By.XPATH,
             xpath,
-            time
+            timeout
         )
     
 
@@ -1121,31 +1082,33 @@ class ChromeScraper:
             By.XPATH,
             xpath
         )
-    
 
-    def _find_element_by_waiting(
+
+    def switch_to_frame_waiting(
         self,
         by: By,
         by_value: str,
-        time: int = 30
-    ) -> Union[WebElement, None]:
+    ):
         """
-        *For internal use only*
-
-        Internal method to simplify the way we try to find
-        an element, by using the `by` parameter provided,
-        waiting until it is visible (or until the `time`
-        amount of time waited is reached).
+        Switch the driver to the iframe with the
+        given `by` and `by_value` conditions. This
+        will let you get the elements inside that
+        iframe.
+        
+        You can also use the `.page_source` to get
+        the whole block of content.
         """
-        wait = WebDriverWait(self.driver, time)
-        element = wait.until(EC.visibility_of_element_located((by, by_value)))
+        wait = WebDriverWait(self.driver, 10)
 
-        return (
-            None
-            if not element else
-            element
+        wait.until(
+            EC.frame_to_be_available_and_switch_to_it(
+                (
+                    by,
+                    by_value
+                )
+            )
         )
-    
+
 
     # TODO: When an element is hidden and you cannot interact you
     # can change the style.display
@@ -1246,94 +1209,6 @@ class ChromeScraper:
 
         return self
     
-
-    def _wait_until(
-        self,
-        condition,
-        timeout: float = 30.0,
-    ) -> bool:
-        """
-        *For internal use only*
-
-        Wait until the `condition` is happening, by
-        waiting a maximum `timeout` time.
-
-        The `condition` must be a lambda function
-        to be able to evaluate it.
-
-        Here is an example of use:
-        ```
-        self._wait_until(
-            lambda: self.current_page_y_offset == pixels
-        )
-        ```
-        """
-        TIME_INTERVAL = 0.1
-        remaining_time = timeout
-
-        while (
-            not condition() and
-            remaining_time > 0
-        ):
-            self.wait(TIME_INTERVAL)
-            remaining_time -= TIME_INTERVAL
-
-        return condition()
-    
-    
-    def _set_transparent_background(
-        self
-    ) -> 'ChromeScraper':
-        """
-        *For internal use only*
-
-        Set the background as transparent.
-        
-        This code is useful when we are taking screenshots of
-        elements with a transparent background and we want to
-        keep that alpha transparency in the image.
-
-        The command:
-        - `self.driver.execute_cdp_cmd(
-            'Emulation.setDefaultBackgroundColorOverride',
-            {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}}
-        )`
-        """
-        self.driver.execute_cdp_cmd(
-            'Emulation.setDefaultBackgroundColorOverride',
-            {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}}
-        )
-
-        return self
-
-
-    def _reset_background(
-        self
-    ) -> 'ChromeScraper':
-        """
-        *For internal use only*
-
-        Reset the background.
-        
-        This code is useful when we are taking screenshots of
-        elements with a transparent background and we want to
-        keep that alpha transparency in the image.
-
-        The command:
-        - `self.driver.execute_cdp_cmd(
-            'Emulation.setDefaultBackgroundColorOverride',
-            {}
-        )`
-        """
-        self.driver.execute_cdp_cmd(
-            'Emulation.setDefaultBackgroundColorOverride',
-            # If empty, it will remove the 'override'
-            # condition, recovering the original value
-            {}
-        )
-
-        return self
-
 
     def screenshot(
         self,
@@ -1608,6 +1483,158 @@ class ChromeScraper:
 
         return self
 
+
+    def _close(
+        self
+    ):
+        """
+        Force the driver to be closed and the 
+        'self.driver' attribute to be None.
+
+        For internal use only.
+        """
+        try:
+            self.driver.close()
+        finally:
+            self.driver = None
+
+
+    def _validate_url(
+        self,
+        url: str
+    ):
+        """
+        *For internal use only*
+
+        Validate the `url` provided, raising an exception
+        if it is not valid.
+        """
+        
+        """
+        When using 'www.google.es' instead of
+        'https://www.google.es' it raises an Exception
+        showing this in the console:
+        [9192:8160:0309/174912.456:ERROR:new_tab_page_handler.cc(1306)] NewTabPage loaded into a non-browser-tab context
+        and setting self.driver = None
+
+        Thats why we are validating with this specific
+        url regexp.
+        """
+        if not GeneralRegularExpression.URL.is_valid_regex(url):
+            raise Exception('The "url" provided is not a valid url.')
+
+
+    def _find_element_by_waiting(
+        self,
+        by: By,
+        by_value: str,
+        timeout: float = 30.0
+    ) -> Union[WebElement, None]:
+        """
+        *For internal use only*
+
+        Internal method to simplify the way we try to find
+        an element, by using the `by` parameter provided,
+        waiting until it is visible (or until the `timeout`
+        amount of time waited is reached).
+        """
+        wait = WebDriverWait(self.driver, timeout)
+        element = wait.until(EC.visibility_of_element_located((by, by_value)))
+
+        return (
+            None
+            if not element else
+            element
+        )
+
+
+    def _wait_until(
+        self,
+        condition,
+        timeout: float = 30.0,
+    ) -> bool:
+        """
+        *For internal use only*
+
+        Wait until the `condition` is happening, by
+        waiting a maximum `timeout` time.
+
+        The `condition` must be a lambda function
+        to be able to evaluate it.
+
+        Here is an example of use:
+        ```
+        self._wait_until(
+            lambda: self.current_page_y_offset == pixels
+        )
+        ```
+        """
+        TIME_INTERVAL = 0.1
+        remaining_time = timeout
+
+        while (
+            not condition() and
+            remaining_time > 0
+        ):
+            self.wait(TIME_INTERVAL)
+            remaining_time -= TIME_INTERVAL
+
+        return condition()
+    
+    
+    def _set_transparent_background(
+        self
+    ) -> 'ChromeScraper':
+        """
+        *For internal use only*
+
+        Set the background as transparent.
+        
+        This code is useful when we are taking screenshots of
+        elements with a transparent background and we want to
+        keep that alpha transparency in the image.
+
+        The command:
+        - `self.driver.execute_cdp_cmd(
+            'Emulation.setDefaultBackgroundColorOverride',
+            {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}}
+        )`
+        """
+        self.driver.execute_cdp_cmd(
+            'Emulation.setDefaultBackgroundColorOverride',
+            {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}}
+        )
+
+        return self
+
+
+    def _reset_background(
+        self
+    ) -> 'ChromeScraper':
+        """
+        *For internal use only*
+
+        Reset the background.
+        
+        This code is useful when we are taking screenshots of
+        elements with a transparent background and we want to
+        keep that alpha transparency in the image.
+
+        The command:
+        - `self.driver.execute_cdp_cmd(
+            'Emulation.setDefaultBackgroundColorOverride',
+            {}
+        )`
+        """
+        self.driver.execute_cdp_cmd(
+            'Emulation.setDefaultBackgroundColorOverride',
+            # If empty, it will remove the 'override'
+            # condition, recovering the original value
+            {}
+        )
+
+        return self
+
     # TODO: Maybe automate some 'execute_javascript' to change
     # 'innerHTML' and that stuff (?)
 
@@ -1705,82 +1732,3 @@ class ChromeScraper:
 #         driver.close()
 
 #     return redirected_url
-
-
-# def get_youtube_summary(video_id):
-#     """
-#     Searchs into 'summarize.tech' web to obtain the summary of the video with the 
-#     provided 'video_id'. This method returns the summary in English, as it is 
-#     provided by that website.
-#     """
-#     url = f'https://www.summarize.tech/www.youtube.com/watch?v={video_id}'
-
-#     try:
-#         options = Options()
-#         options.add_argument("--start-maximized")
-#         # Remove this line below for debug
-#         options.add_argument("--headless=new") # for Chrome >= 109
-#         driver = webdriver.Chrome(options = options)
-#         driver.get(url)
-
-#         summary = driver.find_element_by_tag_name('section').find_element_by_tag_name('p').get_attribute('innerText')
-#     finally:
-#         driver.close()
-
-#     return summary
-
-def google_translate(text, input_language = 'en', output_language = 'es') -> str:
-    url = 'https://translate.google.com/?hl=es'
-    """
-    https://translate.google.com/?hl=es&sl=en&tl=es&text=Aporta%20una%20unidad%20de%20traducci%C3%B3n%20(segmento%20y%20traducci%C3%B3n)%20en%20alg%C3%BAn%20par%20de%20idiomas%20a%20MyMemory.%0ASin%20especificar%20ning%C3%BAn%20par%C3%A1metro%20clave%2C%20la%20contribuci%C3%B3n%20est%C3%A1%20disponible%20para%20todos%20(%C2%A1Gracias!).&op=translate
-
-    https://translate.google.com/?hl=es&tab=TT&sl=en&tl=es&op=translate
-
-    https://translate.google.com/?hl=es&tab=TT&sl=en&tl=es&text=La%20%C3%BAnica%20forma%20de%20saberlo%20es%20lo%20que%20t%C3%BA%20digas&op=translate
-    """
-
-    url = 'https://translate.google.com/?hl=' + output_language + '&tab=TT&sl=' + input_language + '&tl=' + output_language + '&text=' + text + '&op=translate'
-
-    translation = ''
-
-    # TODO: Verify that this below is working
-    driver = ChromeScraper()
-    driver.go_to_web_and_wait_until_loaded(url)
-    translation = driver.find_element_by_xpath_waiting('//*[@jscontroller="JLEx7e"]', 10).get_attribute('innerText')
-    # TODO: Maybe make a method to obtain the inner text from a WebElement (?)
-    return translation
-
-    # TODO: Refactor this as we have a better chrome driver lib now
-    try:
-        options = Options()
-        options.add_argument("--start-maximized")
-        # Comment this line below for debug (enables GUI)
-        options.add_argument("--headless=new") # for Chrome >= 109
-        driver = webdriver.Chrome(options = options)
-        driver.get(url)
-
-        tries = 0
-        while True:
-            if tries < 20:
-                try:
-                    # We try until it doesn't fail (so we have the text)
-                    # TODO: This 'jscontroller' changes from time to time, pay atention
-                    translation = driver.find_elements('xpath', '//*[@jscontroller="JLEx7e"]')[0].get_attribute('innerText')
-                    tries = 20
-                except Exception as e:
-                    # TODO: Uncomment this to see if code error or scrapper error
-                    #print(e)
-                    tries += 1
-                    time.sleep(0.250)
-            else:
-                break
-    finally:
-        driver.close()
-
-    return translation
-
-    """
-    # Intersting options: https://github.com/ultrafunkamsterdam/undetected-chromedriver/issues/1726
-    # Also this: https://stackoverflow.com/questions/19211006/how-to-enable-cookies-in-chromedriver-with-webdriver
-    # What about this: options.AddUserProfilePreference("profile.cookie_controls_mode", 0);
-    """

@@ -329,14 +329,14 @@ files = [
 
 [[package]]
 name = "pystandards"
-version = "0.0.17"
+version = "0.0.18"
 description = "Standards but in Python"
 optional = false
 python-versions = "<3.14,>=3.8"
 groups = ["main"]
 files = [
-    {file = "pystandards-0.0.17-py3-none-any.whl", hash = "sha256:3a51c9d671bf85ef899fa61451b5939588fd8468cb9c1841134fc4792cb59b51"},
-    {file = "pystandards-0.0.17.tar.gz", hash = "sha256:68d0ee1a5bb4eb45250fba442f008c74277a76ecd736a7dc8fe56cd8b920ac15"},
+    {file = "pystandards-0.0.18-py3-none-any.whl", hash = "sha256:f85d2100596fa516190e34cfc8164ea8a4c38226e41a4f34c06f00dc2559e355"},
+    {file = "pystandards-0.0.18.tar.gz", hash = "sha256:d76438015d2db0d41cf275c097aa7e2ac29fa04adea4d9ec24acb8d14945aa72"},
 ]
 
 [package.dependencies]

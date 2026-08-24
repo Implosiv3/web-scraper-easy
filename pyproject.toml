@@ -1,6 +1,6 @@
 [project]
 name = "web-scraper-easy"
-version = "0.0.3"
+version = "0.0.4"
 description = "Web scraper, but made easy"
 authors = [
     {name = "danialcala94", email = "danielalcalavalera@gmail.com"}
