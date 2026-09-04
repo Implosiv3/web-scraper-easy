@@ -1,6 +1,7 @@
 from web_scraper_easy.chrome.dataclasses.options_argument import HeadlessChromeOptionsArgument, LoadExtensionChromeOptionsArgument, _ChromeOptionsArgument, WindowSizeChromeOptionsArgument, IgnoreCertificateErrorsChromeOptionsArgument, IgnoreCertificateErrorsSpkiListChromeOptionsArgument, IgnoreSslErrorsChromeOptionsArgument, LoadChromeUserProfileChromeOptionArgument
 from web_scraper_easy.chrome.dataclasses.experimental_options import ExcludeSwitchesChromeExperimentalOption, EnableDownloadsChromeExperimentalOption, EnableMicrophoneChromeExperimentalOption, EnableClipboardChromeExperimentalOption, _ChromeExperimentalOption
 from web_scraper_easy.chrome.consts import TIMEOUT, TIME_INTERVAL
+from web_scraper_easy.utils import get_random
 from pystandards.regex.general import GeneralRegularExpression
 from env_easy import getenv
 from selenium import webdriver
@@ -15,6 +16,7 @@ from selenium.common.exceptions import TimeoutException
 from typing import Union
 
 import time
+import warnings
 
 
 """
@@ -26,13 +28,16 @@ AD_BLOCK_ABSOLUTEPATH = getenv('AD_BLOCK_ABSOLUTEPATH')
 CHROME_USER_DATA_ABSPATH = getenv('CHROME_USER_DATA_ABSPATH')
 
 if not CHROME_EXTENSIONS_ABSPATH:
-    raise Exception('The "CHROME_EXTENSIONS_ABSPATH" environment variable is not defined.')
+    warnings.warn('The "CHROME_EXTENSIONS_ABSPATH" environment variable is not defined.')
+    # raise Exception('The "CHROME_EXTENSIONS_ABSPATH" environment variable is not defined.')
 
 if not AD_BLOCK_ABSOLUTEPATH:
-    raise Exception('The "AD_BLOCK_ABSOLUTEPATH" environment variable is not defined.')
+    warnings.warn('The "AD_BLOCK_ABSOLUTEPATH" environment variable is not defined.')
+    # raise Exception('The "AD_BLOCK_ABSOLUTEPATH" environment variable is not defined.')
 
 if not CHROME_USER_DATA_ABSPATH:
-    raise Exception('The "CHROME_USER_DATA_ABSPATH" environment variable is not defined.')
+    warnings.warn('The "CHROME_USER_DATA_ABSPATH" environment variable is not defined.')
+    # raise Exception('The "CHROME_USER_DATA_ABSPATH" environment variable is not defined.')
 
 
 class ChromeScraper:
@@ -351,16 +356,22 @@ class ChromeScraper:
 
         # TODO: This must be dynamic and/or given by user
 
-        if do_use_ad_blocker:
+
+        if (
+            do_use_ad_blocker and
+            AD_BLOCK_ABSOLUTEPATH
+        ):
             # This loads the ad block 'uBlock' extension that is installed in my pc
             option_arguments.append(LoadExtensionChromeOptionsArgument(
                 extension_abspath = AD_BLOCK_ABSOLUTEPATH
             ))
-        
+
         # Options that I want, yes or yes
-        option_arguments.append(LoadChromeUserProfileChromeOptionArgument(
-            chrome_user_profile_abspath = CHROME_USER_DATA_ABSPATH
-        ))
+        if CHROME_USER_DATA_ABSPATH:
+            option_arguments.append(LoadChromeUserProfileChromeOptionArgument(
+                chrome_user_profile_abspath = CHROME_USER_DATA_ABSPATH
+            ))
+
         option_arguments.append(IgnoreCertificateErrorsChromeOptionsArgument())
         option_arguments.append(IgnoreSslErrorsChromeOptionsArgument())
         option_arguments.append(IgnoreCertificateErrorsSpkiListChromeOptionsArgument())
@@ -481,7 +492,7 @@ class ChromeScraper:
 
     def wait(
         self,
-        seconds: float
+        seconds: float = 1.0,
     ) -> 'ChromeScraper':
         """
         Wait the `seconds` amount of seconds provided.
@@ -489,6 +500,29 @@ class ChromeScraper:
         There is no limit in the waiting time so
         please, use it carefully.
         """
+        time.sleep(seconds)
+
+        return self
+
+
+    def wait_random(
+        self,
+        min_seconds: float = 0.5,
+        max_seconds: float = 1.5
+    ) -> 'ChromeScraper':
+        """
+        Wait a random amount of seconds in between
+        the `min_seconds` and the `max_seconds`
+        provided.
+
+        There is no limit in the waiting time so
+        please, use it carefully.
+        """
+        seconds = get_random(
+            min_value = min_seconds,
+            max_value = max_seconds
+        )
+
         time.sleep(seconds)
 
         return self
@@ -654,18 +688,23 @@ class ChromeScraper:
         )
     
 
+    # TODO: Deprecated, remove soon
     def find_element_by_id_waiting(
         self,
         id: str,
         timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
-        Waits until the WebElement corresponding to the provided 
-        `element_type` with also provided `id` is visible and 
-        returns it if it becomes visible in the `time` seconds 
-        of waiting. It returns None if not.
+        *Use `find_element_by_id_waiting_until_in_dom`
+        instead*
+
+        Wait until the WebElement with the `id` provided
+        is in the dom and return it if it is detected in
+        less than `timeout` seconds.
+
+        It will return None if not found.
         """
-        return self._find_element_by_waiting(By.ID, id, timeout)
+        return self.find_element_by_id_waiting_until_in_dom(By.ID, id, timeout)
 
 
     def find_elements_by_id(
@@ -680,13 +719,11 @@ class ChromeScraper:
         If you provide the 'element' parameter, the search will 
         be in that element instead of the whole web page.
         """
-        root = (
-            element
-            if element is not None else
-            self.driver
+        return self.find_elements(
+            by = By.ID,
+            by_value = id,
+            element = element
         )
-
-        return root.find_elements(By.ID, id)
 
 
     def find_element_by_text(
@@ -724,6 +761,7 @@ class ChromeScraper:
         )
 
 
+    # TODO: Deprecated, remove soon
     def find_element_by_text_waiting(
         self,
         element_type: str,
@@ -731,12 +769,17 @@ class ChromeScraper:
         timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
-        Waits until the WebElement corresponding to the provided 
-        `element_type` and 'text' is visible and returns it if 
-        it becomes visible in the `timeout` seconds of waiting. It 
-        returns None if not.
+        *Use `find_element_by_text_waiting_until_in_dom`
+        instead*
+
+        Wait until the WebElement of the `element_type`
+        and with the `text` provided is in the dom and
+        return it if it is detected in less than
+        `timeout` seconds.
+
+        It will return None if not found.
         """
-        return self._find_element_by_waiting(
+        return self.find_element_by_id_waiting_until_in_dom(
             By.XPATH,
             f"//{element_type}[contains(text(), '{text}')]",
             #"//" + element_type + "[contains(text(), '" + text + "')]",
@@ -815,6 +858,7 @@ class ChromeScraper:
         )
     
 
+    # TODO: Deprecated, remove soon
     def find_element_by_class_waiting(
         self,
         element_type: str,
@@ -822,12 +866,17 @@ class ChromeScraper:
         timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
-        Waits until the WebElement corresponding to the provided 
-        `element_type` and class is visible and returns it if it
-        becomes visible in the `timeout` seconds of waiting. It 
-        returns None if not.
+        *Use `find_element_by_class_waiting_until_in_dom`
+        instead*
+
+        Wait until the WebElement of the `element_type`
+        and with the `class_str` provided is in the dom
+        and return it if it is detected in less than
+        `timeout` seconds.
+
+        It will return None if not found.
         """
-        return self._find_element_by_waiting(
+        return self.find_element_by_id_waiting_until_in_dom(
             By.XPATH,
             f"//{element_type}[contains(@class, '{class_str}')]",
             #"//" + element_type + "[contains(@class, '" + class_str + "')]",
@@ -903,6 +952,7 @@ class ChromeScraper:
         )
 
 
+    # TODO: Deprecated, remove soon
     def find_element_by_custom_tag_waiting(
         self,
         element_type: str,
@@ -911,10 +961,15 @@ class ChromeScraper:
         timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
-        Waits until the WebElement corresponding to the provided 
-        `element_type` and custom tag is visible and returns it 
-        if it becomes visible in the `timeout` seconds of waiting.
-        It returns None if not.
+        *Use `find_element_by_custom_tag_waiting_until_in_dom`
+        instead*
+
+        Wait until the WebElement of the `element_type`
+        and with the `custom_tag` and `custom_tag_value`
+        provided is in the dom and return it if it is
+        detected in less than `timeout` seconds.
+
+        It will return None if not found.
         """
         tag = (
             f'@{custom_tag}'
@@ -922,7 +977,7 @@ class ChromeScraper:
             f"@{custom_tag}='{custom_tag_value}'"
         )
 
-        return self._find_element_by_waiting(
+        return self.find_element_by_id_waiting_until_in_dom(
             By.XPATH,
             f'//{element_type}[{tag}]',
             #"//" + element_type + "[" + tag + "]"
@@ -991,18 +1046,23 @@ class ChromeScraper:
         )
     
 
+    # TODO: Deprecated, remove soon
     def find_element_by_element_type_waiting(
         self,
         element_type: str,
         timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
-        Waits until the WebElement corresponding to the provided 
-        `element_type` tag is visible and returns it if it becomes
-        visible in the `timeout` seconds of waiting. It returns
-        None if not.
+        *Use `find_element_by_element_type_waiting_until_in_dom`
+        instead*
+
+        Wait until the WebElement of the `element_type`
+        provided is in the dom and return it if it is
+        detected in less than `timeout` seconds.
+
+        It will return None if not found.
         """
-        return self._find_element_by_waiting(
+        return self.find_element_by_id_waiting_until_in_dom(
             By.TAG_NAME,
             element_type,
             timeout
@@ -1044,17 +1104,21 @@ class ChromeScraper:
         )
     
 
+    # TODO: Deprecated, remove soon
     def find_element_by_xpath_waiting(
         self,
         xpath: str,
         timeout: float = TIMEOUT
     ) -> Union[WebElement, None]:
         """
+        *Use `find_element_by_xpath_waiting_until_in_dom`
+        instead*
+
         Waits until the WebElement corresponding to the provided `xpath`
         is visible and returns it if it becomes visible in the `timeout` 
         seconds of waiting. It returns None if not.
         """
-        return self._find_element_by_waiting(
+        return self.find_element_by_id_waiting_until_in_dom(
             By.XPATH,
             xpath,
             timeout
@@ -1067,13 +1131,49 @@ class ChromeScraper:
         element: Union[WebElement, None] = None
     ) -> list[WebElement]:
         """
-        This method uses the 'By.XPATH' finding elements method.
+        Wait until the WebElement matching the given XPath
+        is found, looking for it in the `element` provided
+        or in the `self.driver` if not, waiting a maximum
+        time of `timeout` seconds.
 
-        If you provide the 'element' parameter, the search will 
-        be in that element instead of the whole web page.
+        For example, given the following DOM:
+        ```
+        <div>
+            <span class="review">First review</span>
+            <span class="review">Second review</span>
+        </div>
+        ```
 
-        This method returns an array with all the found elements
-        or empty if not found.
+        The following call will return the matching WebElements:
+        ```
+        self.find_elements_by_xpath_waiting_until_in_dom(
+            "//span[@class='review']"
+        )
+        ```
+        """
+        return self.find_elements(
+            by = By.XPATH,
+            by_value = xpath,
+            element = element
+        )
+
+
+
+
+    """
+            NEW METHODS BELOW
+    """
+
+    def find_elements(
+        self,
+        by: By,
+        by_value: str,
+        element: Union[WebElement, None] = None
+    ) -> list[WebElement]:
+        """
+        Find the elements with the `by` and
+        `by_value` provided, inside the `element`
+        given, or the `self.driver` if not.
         """
         root = (
             self.driver
@@ -1082,15 +1182,650 @@ class ChromeScraper:
         )
 
         return root.find_elements(
-            By.XPATH,
-            xpath
+            by = by,
+            value = by_value
         )
 
 
-    def switch_to_frame_waiting(
+    def find_element_waiting_until_in_dom(
         self,
         by: By,
         by_value: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> Union[WebElement, None]:
+        """
+        Wait until the WebElement with the `by`
+        and the `by_value` provided is present in
+        the DOM, looking for it in the `element`
+        provided or in the `self.driver` if not,
+        waiting a maximum time of `timeout`
+        seconds.
+        """
+        return self.wait_until(
+            condition = EC.presence_of_element_located(
+                (by, by_value)
+            ),
+            element = element,
+            timeout = timeout,
+        )
+
+    def find_element_by_id_waiting_until_in_dom(
+        self,
+        id: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given `id`
+        is found, looking for it in the `element` provided
+        or in the `self.driver` if not, waiting a maximum
+        time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <input id="search-input" type="text">
+        ```
+
+        The following call will return the input WebElement:
+        ```
+        self.find_element_by_id_waiting_until_in_dom(
+            "search-input"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_in_dom(
+            By.ID,
+            id,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_css_selector_waiting_until_in_dom(
+        self,
+        css_selector: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement matching the given
+        CSS selector is found, looking for it in the
+        `element` provided or in the `self.driver` if not,
+        waiting a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <input class="search-input" type="text">
+        ```
+
+        The following call will return the input WebElement:
+        ```
+        self.find_element_by_css_selector_waiting_until_in_dom(
+            ".search-input"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_in_dom(
+            By.CSS_SELECTOR,
+            css_selector,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_xpath_waiting_until_in_dom(
+        self,
+        xpath: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement matching the given
+        XPath is found, looking for it in the `element`
+        provided or in the `self.driver` if not, waiting
+        a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <button class="submit-button">
+            Submit
+        </button>
+        ```
+
+        The following call will return the button WebElement:
+        ```
+        self.find_element_by_xpath_waiting_until_in_dom(
+            "//button[@class='submit-button']"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_in_dom(
+            By.XPATH,
+            xpath,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_class_name_waiting_until_in_dom(
+        self,
+        class_name: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given class
+        name is found, looking for it in the `element`
+        provided or in the `self.driver` if not, waiting
+        a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <div class="reviews-container">
+            Reviews
+        </div>
+        ```
+
+        The following call will return the div WebElement:
+        ```
+        self.find_element_by_class_name_waiting_until_in_dom(
+            "reviews-container"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_in_dom(
+            By.CLASS_NAME,
+            class_name,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_custom_tag_waiting_until_in_dom(
+        self,
+        element_type: str,
+        custom_tag: str,
+        custom_tag_value: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given `custom_tag`
+        and `custom_tag_value` is in the dom, looking for it
+        in the `element` provided or in the `self.driver` if
+        not, waiting a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <div data-testid="reviews-container">
+            Reviews
+        </div>
+        ```
+
+        The following call will return the visible div WebElement:
+        ```
+        self.find_element_by_custom_tag_waiting_until_visible(
+            "div",
+            "data-testid",
+            "reviews-container"
+        )
+        ```
+
+        You can use '*' as `element_type` to find any type
+        of visible element with the given custom tag.
+        """
+        # @custom-tag or @custom-tag='something'
+        tag = (
+            f'@{custom_tag}'
+            if custom_tag_value == '' else
+            f"@{custom_tag}='{custom_tag_value}'"
+        )
+
+        return self.find_element_waiting_until_in_dom(
+            By.XPATH,
+            f'//{element_type}[{tag}]',
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_element_type_waiting_until_in_dom(
+        self,
+        element_type: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given element type
+        is in the dom, looking for it in the `element`
+        provided or in the `self.driver` if not, waiting a
+        maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <button>
+            Submit
+        </button>
+        ```
+
+        The following call will return the visible button
+        WebElement:
+        ```
+        self.find_element_by_element_type_waiting_until_visible(
+            "button"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_in_dom(
+            by = By.TAG_NAME,
+            by_value = element_type,
+            element = element,
+            timeout = timeout
+        )
+
+
+    def find_element_by_class_waiting_until_in_dom(
+        self,
+        element_type: str,
+        class_str: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with a class containing the
+        given `class_str` is found, looking for it in the
+        `element` provided or in the `self.driver` if not,
+        waiting a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <div class="reviews-container active">
+            Reviews
+        </div>
+        ```
+
+        The following call will return the div WebElement:
+        ```
+        self.find_element_by_class_waiting_until_in_dom(
+            "div",
+            "reviews-container"
+        )
+        ```
+        """
+        by_value = f"//{element_type}[contains(@class, '{class_str}')]"
+
+        return self.find_element_waiting_until_in_dom(
+            by = By.XPATH,
+            by_value = by_value,
+            element = element,
+            timeout = timeout
+        )
+
+
+    def find_element_by_text_waiting_until_in_dom(
+        self,
+        element_type: str,
+        text: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> Union[WebElement, None]:
+        """
+        Wait until the WebElement containing the given `text`
+        is found, looking for it in the `element` provided
+        or in the `self.driver` if not, waiting a maximum
+        time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <button>
+            Submit review
+        </button>
+        ```
+
+        The following call will return the button WebElement:
+        ```
+        self.find_element_by_text_waiting_until_in_dom(
+            "button",
+            "Submit review"
+        )
+        ```
+        """
+        by_value = f"//{element_type}[contains(text(), '{text}')]"
+
+        return self.find_element_by_id_waiting_until_in_dom(
+            by = By.XPATH,
+            by_value = by_value,
+            element = element,
+            timeout = timeout
+        )
+
+
+    def find_element_waiting_until_visible(
+        self,
+        by: By,
+        by_value: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> Union[WebElement, None]:
+        """
+        Wait until the WebElement with the `by`
+        and the `by_value` provided is found,
+        looking for it in the `element` provided
+        or in the `self.driver` if not, waiting
+        a maximum time of `timeout` seconds.
+        """
+        return self.wait_until(
+            condition = EC.visibility_of_element_located(
+                (by, by_value)
+            ),
+            element = element,
+            timeout = timeout,
+        )
+
+
+    def find_element_by_id_waiting_until_visible(
+        self,
+        id: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given `id`
+        is visible, looking for it in the `element`
+        provided or in the `self.driver` if not, waiting
+        a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <input id="search-input" type="text">
+        ```
+
+        The following call will return the visible
+        input WebElement:
+        ```
+        self.find_element_by_id_waiting_until_visible(
+            "search-input"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_visible(
+            By.ID,
+            id,
+            element,
+            timeout,
+        )
+
+    
+    def find_element_by_css_selector_waiting_until_visible(
+        self,
+        css_selector: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement matching the given
+        CSS selector is visible, looking for it in the
+        `element` provided or in the `self.driver` if not,
+        waiting a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <button class="submit-button">
+            Submit
+        </button>
+        ```
+
+        The following call will return the visible
+        button WebElement:
+        ```
+        self.find_element_by_css_selector_waiting_until_visible(
+            ".submit-button"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_visible(
+            By.CSS_SELECTOR,
+            css_selector,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_xpath_waiting_until_visible(
+        self,
+        xpath: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement matching the given
+        XPath is visible, looking for it in the `element`
+        provided or in the `self.driver` if not, waiting
+        a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <button class="submit-button">
+            Submit
+        </button>
+        ```
+
+        The following call will return the visible
+        button WebElement:
+        ```
+        self.find_element_by_xpath_waiting_until_visible(
+            "//button[@class='submit-button']"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_visible(
+            By.XPATH,
+            xpath,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_class_name_waiting_until_visible(
+        self,
+        class_name: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given class
+        name is visible, looking for it in the `element`
+        provided or in the `self.driver` if not, waiting
+        a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <div class="reviews-container">
+            Reviews
+        </div>
+        ```
+
+        The following call will return the visible
+        div WebElement:
+        ```
+        self.find_element_by_class_name_waiting_until_visible(
+            "reviews-container"
+        )
+        ```
+        """
+        return self.find_element_waiting_until_visible(
+            By.CLASS_NAME,
+            class_name,
+            element,
+            timeout,
+        )
+
+
+    def find_element_by_custom_tag_waiting_until_visible(
+        self,
+        element_type: str,
+        custom_tag: str,
+        custom_tag_value: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with the given `custom_tag`
+        and `custom_tag_value` is visible, looking for it
+        in the `element` provided or in the `self.driver` if
+        not, waiting a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <div data-testid="reviews-container">
+            Reviews
+        </div>
+        ```
+
+        The following call will return the visible div WebElement:
+        ```
+        self.find_element_by_custom_tag_waiting_until_visible(
+            "div",
+            "data-testid",
+            "reviews-container"
+        )
+        ```
+
+        You can use '*' as `element_type` to find any type
+        of visible element with the given custom tag.
+        """
+        # @custom-tag or @custom-tag='something'
+        tag = (
+            f'@{custom_tag}'
+            if custom_tag_value == '' else
+            f"@{custom_tag}='{custom_tag_value}'"
+        )
+
+        return self.find_element_waiting_until_visible(
+            by = By.XPATH,
+            by_value = f'//{element_type}[{tag}]',
+            element = element,
+            timeout = timeout,
+        )
+
+
+    def find_element_by_element_type_waiting_until_visible(
+            self,
+            element_type: str,
+            element: Union[WebElement, None] = None,
+            timeout: float = TIMEOUT,
+        ) -> WebElement:
+            """
+            Wait until the WebElement with the given element type
+            is visible, looking for it in the `element` provided
+            or in the `self.driver` if not, waiting a maximum
+            time of `timeout` seconds.
+
+            For example, given the following DOM:
+            ```
+            <button>
+                Submit
+            </button>
+            ```
+
+            The following call will return the visible button
+            WebElement:
+            ```
+            self.find_element_by_element_type_waiting_until_visible(
+                "button"
+            )
+            ```
+            """
+            return self.find_element_waiting_until_visible(
+                by = By.TAG_NAME,
+                by_value = element_type,
+                element = element,
+                timeout = timeout
+            )
+
+
+    def find_element_by_class_waiting_until_visible(
+        self,
+        element_type: str,
+        class_str: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> WebElement:
+        """
+        Wait until the WebElement with a class containing the
+        given `class_str` is visible, looking for it in the
+        `element` provided or in the `self.driver` if not,
+        waiting a maximum time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <div class="reviews-container active">
+            Reviews
+        </div>
+        ```
+
+        The following call will return the div WebElement:
+        ```
+        self.find_element_by_class_waiting_until_in_dom(
+            "div",
+            "reviews-container"
+        )
+        ```
+        """
+        by_value = f"//{element_type}[contains(@class, '{class_str}')]"
+
+        return self.find_element_waiting_until_visible(
+            by = By.XPATH,
+            by_value = by_value,
+            element = element,
+            timeout = timeout
+        )
+
+    
+    def find_element_by_text_waiting_until_visible(
+        self,
+        element_type: str,
+        text: str,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ) -> Union[WebElement, None]:
+        """
+        Wait until the WebElement containing the given `text`
+        is visible, looking for it in the `element` provided
+        or in the `self.driver` if not, waiting a maximum
+        time of `timeout` seconds.
+
+        For example, given the following DOM:
+        ```
+        <button>
+            Submit review
+        </button>
+        ```
+
+        The following call will return the button WebElement:
+        ```
+        self.find_element_by_text_waiting_until_in_dom(
+            "button",
+            "Submit review"
+        )
+        ```
+        """
+        by_value = f"//{element_type}[contains(text(), '{text}')]"
+
+        return self.find_element_by_id_waiting_until_visible(
+            by = By.XPATH,
+            by_value = by_value,
+            element = element,
+            timeout = timeout
+        )
+
+
+    def switch_to_iframe_waiting(
+        self,
+        by: By,
+        by_value: str,
+        timeout: float = TIMEOUT
     ):
         """
         Switch the driver to the iframe with the
@@ -1101,15 +1836,15 @@ class ChromeScraper:
         You can also use the `.page_source` to get
         the whole block of content.
         """
-        wait = WebDriverWait(self.driver, 10)
-
-        wait.until(
-            EC.frame_to_be_available_and_switch_to_it(
+        return self.wait_until(
+            condition = EC.frame_to_be_available_and_switch_to_it(
                 (
                     by,
                     by_value
                 )
-            )
+            ),
+            element = None,
+            timeout = timeout,
         )
 
 
@@ -1139,6 +1874,94 @@ class ChromeScraper:
         raise TimeoutException(f'We expected {str(number_of_changes)} changes in {str(timeout)} seconds but there were {str(changes)} changes in that period of time')
 
 
+    def wait_until(
+        self,
+        condition,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ):
+        """
+        Wait until the `condition` is happening, by
+        waiting a maximum `timeout` time.
+
+        The `condition` must be a callable compatible
+        with `WebDriverWait`.
+
+        The condition's result is returned when it
+        becomes truthy.
+
+        This method will use a `WebDriverWait`
+        instance.
+
+        If `element` is provided, the `element` will
+        be passed to the `WebDriverWait` instance
+        instead of the `self.driver`.
+
+        Here is an example of use:
+        ```
+        # Find element and return it when visible
+        self.wait_until(
+            condition = EC.visibility_of_element_located(
+                (by, by_value)
+            ),
+            element = element,
+            timeout = timeout,
+        )
+        ```
+        """
+        root = (
+            element
+            if element is not None else
+            self.driver
+        )
+
+        return WebDriverWait(
+            driver = root,
+            timeout = timeout
+        ).until(
+            condition
+        )
+
+
+    def wait_until_lambda(
+        self,
+        condition,
+        element: Union[WebElement, None] = None,
+        timeout: float = TIMEOUT,
+    ):
+        """
+        Wait until the `condition` lambda function is happening,
+        by waiting a maximum time of `timeout` seconds.
+
+        The condition's result is returned when it becomes truthy.
+
+        If `element` is provided, the `element` will be passed
+        to the `WebDriverWait` instance instead of the
+        `self.driver`.
+
+        Here is an example of use:
+        ```
+        self.wait_until_lambda(
+            condition=lambda: self.current_page_y_offset == pixels,
+            timeout=timeout,
+        )
+        ```
+        """
+        root = (
+            element
+            if element is not None else
+            self.driver
+        )
+
+        return WebDriverWait(
+            driver=root,
+            timeout=timeout
+        ).until(
+            lambda _: condition()
+        )
+
+
+
     # TODO: When an element is hidden and you cannot interact you
     # can change the style.display
     # driver.execute_script("arguments[0].style.display = 'block';", field)
@@ -1160,55 +1983,243 @@ class ChromeScraper:
         return self
     
 
+    # TODO: Refactor if possible
     def scroll_down(
         self,
-        pixels: int
+        pixels: int,
+        micro_pause_time: float = 0.2,
+        do_behave_like_human: bool = True
     ) -> 'ChromeScraper':
         """
-        Scroll down the web page the amount of pixels provided as
-        the `pixels` parameter, starting from the current position.
+        Scroll down the web page by the amount of pixels provided
+        as the `pixels` parameter, starting from the current position.
 
-        This method will make a passive waiting until the new
-        position is reached.
+        The scroll is performed through multiple irregular
+        movements with short random waiting intervals to simulate
+        a more natural mouse wheel movement.
+
+        If the page reaches the bottom but loads more content
+        dynamically, the method will wait for the new content
+        to be loaded and continue scrolling.
+
+        The `micro_pause_time` will be used to wait
+        a specific and random amount of time in 
+        between the mini scrolls this method does,
+        being a value around it (+-65%).
+
+        The method will stop when the requested amount of pixels
+        has been scrolled or when the page can no longer be
+        scrolled after several attempts.
         """
-        pixels = abs(pixels) + self.current_page_y_offset
+        pixels = abs(pixels)
 
-        self.execute_script(f'window.scrollTo(0, {str(pixels)})')
+        scrolled_pixels = 0
+        no_progress_attempts = 0
 
-        self._wait_until(
-            condition = lambda: self.current_page_y_offset != pixels
-        )
+        max_no_progress_attempts = 3
+        load_timeout = 3
+
+        while scrolled_pixels < pixels:
+            pixels_to_scroll = min(
+                int(get_random(200, 350)),
+                pixels - scrolled_pixels
+            )
+
+            previous_y_offset = self.current_page_y_offset
+
+            previous_scroll_height = self.execute_script(
+                'return document.documentElement.scrollHeight'
+            )
+
+            if do_behave_like_human:
+                """
+                We will try to simulate scrolling by using
+                the mouse wheel as a human...
+                """
+                movements = self._get_scroll_movements(pixels_to_scroll)
+
+                for pixels_to_scroll_per_movement in movements:
+                    self.execute_script(
+                        """
+                        window.scrollTo(
+                            0,
+                            window.scrollY + arguments[0]
+                        );
+                        """,
+                        pixels_to_scroll_per_movement
+                    )
+
+                    # Minimal pause in between
+                    self.wait_random(0.01, 0.03)
+            else:
+                self.execute_script(
+                    """
+                    window.scrollTo(
+                        0,
+                        arguments[0] + arguments[1]
+                    );
+                    """,
+                    previous_y_offset,
+                    pixels_to_scroll
+                )
+
+            self.wait_until_lambda(
+                condition = lambda: (
+                    self.current_page_y_offset != previous_y_offset
+                    or
+                    self.execute_script(
+                        'return document.documentElement.scrollHeight'
+                    ) != previous_scroll_height
+                ),
+                timeout = load_timeout,
+            )
+
+            current_y_offset = self.current_page_y_offset
+
+            current_scroll_height = self.execute_script(
+                'return document.documentElement.scrollHeight'
+            )
+
+            moved_pixels = (
+                current_y_offset - previous_y_offset
+            )
+
+            if moved_pixels > 0:
+                scrolled_pixels += moved_pixels
+                no_progress_attempts = 0
+            elif current_scroll_height != previous_scroll_height:
+                # New content was loaded. Try scrolling again.
+                no_progress_attempts = 0
+            else:
+                no_progress_attempts += 1
+
+                if no_progress_attempts >= max_no_progress_attempts:
+                    break
+
+            self.wait(get_random(micro_pause_time * 0.65, micro_pause_time * 1.35))
 
         return self
 
 
+    # TODO: Refactor if possible
     def scroll_up(
         self,
-        pixels: int
+        pixels: int,
+        micro_pause_time: float = 0.05,
+        do_behave_like_human: bool = True
     ) -> 'ChromeScraper':
         """
-        Scroll up the web page the amount of pixels provided as
-        the `pixels` parameter, starting from the current position.
+        Scroll up the web page by the amount of pixels provided
+        as the `pixels` parameter, starting from the current position.
 
-        This method will make a passive waiting until the new
-        position is reached.
+        The scroll is performed through multiple irregular
+        movements with short random waiting intervals to simulate
+        a more natural mouse wheel movement.
+
+        The `micro_pause_time` will be used to wait
+        a specific and random amount of time in
+        between the mini scrolls this method does,
+        being a value around it (+-65%).
+
+        The method will stop when the requested amount of pixels
+        has been scrolled or when the page can no longer be
+        scrolled after several attempts.
         """
         pixels = abs(pixels)
-        current_y = self.current_page_y_offset
 
-        pixels = current_y - pixels
-        if pixels < 0:
-            pixels = 0
+        scrolled_pixels = 0
+        no_progress_attempts = 0
 
-        self.execute_script(f'window.scrollTo(0, {str(pixels)})')
+        max_no_progress_attempts = 3
+        scroll_timeout = 0.5
 
-        self._wait_until(
-            condition = lambda: self.current_page_y_offset != pixels
-        )
+        while scrolled_pixels < pixels:
+            pixels_to_scroll = min(
+                int(get_random(200, 350)),
+                pixels - scrolled_pixels
+            )
+
+            previous_y_offset = self.current_page_y_offset
+
+            if previous_y_offset == 0:
+                break
+
+            if do_behave_like_human:
+                """
+                We will try to simulate scrolling by using
+                the mouse wheel as a human...
+                """
+                movements = self._get_scroll_movements(
+                    pixels_to_scroll
+                )
+
+                for pixels_to_scroll_per_movement in movements:
+                    self.execute_script(
+                        """
+                        window.scrollTo(
+                            0,
+                            window.scrollY - arguments[0]
+                        );
+                        """,
+                        pixels_to_scroll_per_movement
+                    )
+
+                    # Minimal pause in between
+                    self.wait_random(0.01, 0.03)
+
+            else:
+                self.execute_script(
+                    """
+                    window.scrollTo(
+                        0,
+                        arguments[0] - arguments[1]
+                    );
+                    """,
+                    previous_y_offset,
+                    pixels_to_scroll
+                )
+
+            try:
+                self.wait_until_lambda(
+                    condition = lambda: (
+                        self.current_page_y_offset != previous_y_offset
+                        or
+                        self.current_page_y_offset == 0
+                    ),
+                    timeout = scroll_timeout,
+                )
+            except TimeoutException:
+                # The page did not move. This is a valid
+                # situation when there is no more scroll available.
+                pass
+
+            current_y_offset = self.current_page_y_offset
+
+            moved_pixels = previous_y_offset - current_y_offset
+
+            if moved_pixels > 0:
+                scrolled_pixels += moved_pixels
+                no_progress_attempts = 0
+            else:
+                no_progress_attempts += 1
+
+                if no_progress_attempts >= max_no_progress_attempts:
+                    break
+
+            if current_y_offset == 0:
+                break
+
+            self.wait(
+                get_random(
+                    micro_pause_time * 0.65,
+                    micro_pause_time * 1.35
+                )
+            )
 
         return self
     
 
+    # TODO: Transform and use 'scroll_up' or 'scroll_down' (?)
     def scroll_to_element(
         self,
         element: WebElement
@@ -1387,6 +2398,15 @@ class ChromeScraper:
         """
         Executes the provided `script` synchronously with
         the given `args` if provided.
+
+        You can make a call like this:
+        ```
+        chrome_scraper.execute_script(
+            'arguments[0].scrollTop += arguments[1];',
+            arg1,
+            arg2
+        )
+        ```
         """
         return self.driver.execute_script(script, *args)
 
@@ -1553,35 +2573,54 @@ class ChromeScraper:
             raise Exception('The "url" provided is not a valid url.')
 
 
-    def _find_element_by_waiting(
+    def _get_scroll_movements(
         self,
-        by: By,
-        by_value: str,
-        timeout: float = TIMEOUT
-    ) -> Union[WebElement, None]:
+        pixels: int
+    ) -> list[int]:
         """
         *For internal use only*
 
-        Internal method to simplify the way we try to find
-        an element, by using the `by` parameter provided,
-        waiting until it is visible (or until the `timeout`
-        amount of time waited is reached).
-        """
-        wait = WebDriverWait(self.driver, timeout)
-        element = wait.until(EC.visibility_of_element_located((by, by_value)))
+        Get the pixel movements that compose a single
+        scroll wheel gesture.
 
-        return (
-            None
-            if not element else
-            element
+        The returned movements follow an acceleration
+        and deceleration pattern, starting and ending
+        with short movements and reaching a larger
+        movement in the middle.
+
+        It generates 5 movements with the next
+        distribution:
+        - 0.10
+        - 0.20
+        - 0.40
+        - 0.20
+        - 0.10
+        """
+        pixels = abs(pixels)
+
+        proportions = (
+            0.10,
+            0.20,
+            0.40,
+            0.20,
+            0.10,
         )
+
+        movements = [
+            int(pixels * proportion)
+            for proportion in proportions
+        ]
+
+        movements[-1] += pixels - sum(movements)
+
+        return movements
 
 
     def _wait_until(
         self,
         condition,
         timeout: float = TIMEOUT,
-    ) -> bool:
+    ):
         """
         *For internal use only*
 
@@ -1590,6 +2629,11 @@ class ChromeScraper:
 
         The `condition` must be a lambda function
         to be able to evaluate it.
+
+        This method will use the `time` module.
+
+        The condition's result is returned when it
+        becomes truthy.
 
         Here is an example of use:
         ```
@@ -1600,10 +2644,12 @@ class ChromeScraper:
         """
         remaining_time = timeout
 
-        while (
-            not condition() and
-            remaining_time > 0
-        ):
+        while remaining_time > 0:
+            result = condition()
+
+            if result:
+                return result
+
             self.wait(TIME_INTERVAL)
             remaining_time -= TIME_INTERVAL
 

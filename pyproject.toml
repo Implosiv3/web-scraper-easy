@@ -1,6 +1,6 @@
 [project]
 name = "web-scraper-easy"
-version = "0.0.5"
+version = "0.0.6"
 description = "Web scraper, but made easy"
 authors = [
     {name = "danialcala94", email = "danielalcalavalera@gmail.com"}
@@ -16,7 +16,7 @@ Issues = "https://github.com/Implosiv3/bufferpy/issues"
 # Mandatory
 pystandards = { version = ">=0.0.17,<1.0.0", optional = false }
 selenium = { version = ">=4.27.1,<9999.0.0", optional = false }
-env_easy = { version = ">=0.0.4,<1.0.0", optional = false }
+env_easy = { version = ">=0.0.7,<1.0.0", optional = false }
 # Optional
 
 [tool.poetry]
