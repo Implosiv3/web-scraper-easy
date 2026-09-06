@@ -1,6 +1,6 @@
 [project]
 name = "web-scraper-easy"
-version = "0.0.6"
+version = "0.0.7"
 description = "Web scraper, but made easy"
 authors = [
     {name = "danialcala94", email = "danielalcalavalera@gmail.com"}
@@ -9,8 +9,8 @@ readme = "README.md"
 requires-python = ">=3.8,<3.14"
 
 [project.urls]
-Homepage = "https://github.com/Implosiv3/bufferpy"
-Issues = "https://github.com/Implosiv3/bufferpy/issues"
+Homepage = "https://github.com/Implosiv3/web-scraper-easy"
+Issues = "https://github.com/Implosiv3/web-scraper-easy/issues"
 
 [tool.poetry.dependencies]
 # Mandatory
