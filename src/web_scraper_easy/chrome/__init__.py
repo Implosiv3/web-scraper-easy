@@ -977,11 +977,11 @@ class ChromeScraper:
             f"@{custom_tag}='{custom_tag_value}'"
         )
 
-        return self.find_element_by_id_waiting_until_in_dom(
-            By.XPATH,
-            f'//{element_type}[{tag}]',
+        return self.find_element_waiting_until_in_dom(
+            by = By.XPATH,
+            by_value = f'//{element_type}[{tag}]',
             #"//" + element_type + "[" + tag + "]"
-            timeout
+            timeout = timeout
         )
 
 
@@ -1953,11 +1953,17 @@ class ChromeScraper:
             self.driver
         )
 
+        def selenium_condition(_):
+            result = condition()
+            # Debug only
+            # print("Condition result:", result)
+            return result
+
         return WebDriverWait(
-            driver=root,
-            timeout=timeout
+            driver = root,
+            timeout = timeout
         ).until(
-            lambda _: condition()
+            selenium_condition
         )
 
 
