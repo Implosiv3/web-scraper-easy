@@ -779,11 +779,11 @@ class ChromeScraper:
 
         It will return None if not found.
         """
-        return self.find_element_by_id_waiting_until_in_dom(
+        return self.find_element_waiting_until_in_dom(
             By.XPATH,
             f"//{element_type}[contains(text(), '{text}')]",
             #"//" + element_type + "[contains(text(), '" + text + "')]",
-            timeout
+            timeout = timeout
         )
     
 
@@ -876,11 +876,11 @@ class ChromeScraper:
 
         It will return None if not found.
         """
-        return self.find_element_by_id_waiting_until_in_dom(
+        return self.find_element_waiting_until_in_dom(
             By.XPATH,
             f"//{element_type}[contains(@class, '{class_str}')]",
             #"//" + element_type + "[contains(@class, '" + class_str + "')]",
-            timeout
+            timeout = timeout
         )
 
 
@@ -1062,10 +1062,10 @@ class ChromeScraper:
 
         It will return None if not found.
         """
-        return self.find_element_by_id_waiting_until_in_dom(
+        return self.find_element_waiting_until_in_dom(
             By.TAG_NAME,
             element_type,
-            timeout
+            timeout = timeout
         )
         
 
@@ -1118,10 +1118,10 @@ class ChromeScraper:
         is visible and returns it if it becomes visible in the `timeout` 
         seconds of waiting. It returns None if not.
         """
-        return self.find_element_by_id_waiting_until_in_dom(
+        return self.find_element_waiting_until_in_dom(
             By.XPATH,
             xpath,
-            timeout
+            timeout = timeout
         )
     
 
